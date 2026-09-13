@@ -1,0 +1,6 @@
+import {createHmac,timingSafeEqual} from "crypto";import {cookies} from "next/headers";import {requireDb} from "./db";
+const name="finsight_session",secret=process.env.SESSION_SECRET||"";
+function sign(v:string){if(!secret)throw new Error("SESSION_SECRET must be configured");return `${v}.${createHmac("sha256",secret).update(v).digest("hex")}`}
+export async function user(){const raw=(await cookies()).get(name)?.value;if(!raw||!secret)return null;const [id,s]=raw.split(".");const wanted=createHmac("sha256",secret).update(id||"").digest("hex");if(!id||!s||s.length!==wanted.length||!timingSafeEqual(Buffer.from(s),Buffer.from(wanted)))return null;const q=await requireDb().query("select u.id,u.email from sessions s join users u on u.id=s.user_id where s.id=$1 and s.expires_at>now()",[id]);return q.rows[0]||null}
+export async function admin(){const u=await user();if(!u)throw new Error("Authentication required");return u}
+export async function createSession(userId:string){const q=await requireDb().query("insert into sessions(user_id,expires_at) values($1,now()+interval '12 hours') returning id",[userId]);(await cookies()).set(name,sign(q.rows[0].id),{httpOnly:true,sameSite:"lax",secure:process.env.NODE_ENV==="production",path:"/"})}

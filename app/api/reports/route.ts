@@ -1,0 +1,3 @@
+import {NextRequest,NextResponse}from"next/server";import {admin}from"../../../lib/auth";import {requireDb}from"../../../lib/db";
+export async function GET(){try{await admin();return NextResponse.json((await requireDb().query("select * from reports order by created_at desc")).rows)}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Error"},{status:401})}}
+export async function POST(r:NextRequest){try{await admin();const x=await r.json();return NextResponse.json((await requireDb().query("insert into reports(name,dataset_id,definition) values($1,$2,$3) returning *",[x.name,x.datasetId,x.definition])).rows[0])}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Error"},{status:400})}}

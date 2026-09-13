@@ -1,0 +1,1 @@
+import "./styles.css"; export const metadata={title:"FinSight365",description:"D365 F&O reporting platform"}; export default function Layout({children}:{children:React.ReactNode}){return <html lang="en"><body>{children}</body></html>}

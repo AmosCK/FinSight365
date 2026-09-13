@@ -1,0 +1,7 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_DB: finsight365, POSTGRES_USER: finsight365, POSTGRES_PASSWORD: change-me }
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+volumes: { pgdata: {} }
