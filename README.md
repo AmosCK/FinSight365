@@ -1,5 +1,17 @@
 # FinSight365
 
+> **Transform raw D365 F&O operational and financial data into interactive, visual dashboards.**
+
+FinSight365 is a D365 Finance & Operations reporting and analytics platform. This current application provides a secure Postman-style browser interface and Node.js proxy for exploring D365 F&O OData data—the foundation for richer reporting workflows.
+
+## Product direction
+
+- Self-service reports and visual dashboards backed by D365 F&O Data Entities.
+- Live and scheduled data retrieval for finance, subledger, and inventory data.
+- Role-aware access, row-level filtering, interactive slicing, drill-through, and export capabilities.
+
+## Current application
+
 A small Postman-style web application for Dynamics 365 Finance & Operations OData.
 
 ## What it solves
@@ -44,7 +56,7 @@ Microsoft documents that F&O OData services support OAuth 2.0 and service-to-ser
 
 7. Open:
 
-   http://localhost:3000
+   http://localhost:4500
 
 ## Example request
 
