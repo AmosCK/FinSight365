@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FinSight365 - Interactive</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+<header class="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6 shadow-lg">
+  <h1 class="text-xl font-bold">🌳 D365 Data Explorer</h1>
+  <span id="health" class="text-xs opacity-70">Checking backend...</span>
+</header>
+
+<div class="flex h-[calc(100vh-56px)] gap-0">
+  <!-- LEFT: Entity Tree Navigator -->
+  <div class="w-80 bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
+    <div class="p-4 border-b border-gray-700">
+      <h3 class="text-sm font-bold text-blue-400 mb-3">📋 Entity Tree</h3>
+      <input id="entitySearch" type="text" placeholder="Search entities..." 
+        class="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+    <div id="entityTreeContainer" class="flex-1 overflow-auto p-2">
+      <div id="entityTree" class="space-y-1"></div>
+    </div>
+  </div>
+
+  <!-- MIDDLE: Query Builder & Filters -->
+  <div class="w-96 bg-gray-800 border-r border-gray-700 flex flex-col overflow-hidden">
+    <div class="p-4 border-b border-gray-700">
+      <h3 class="text-sm font-bold text-green-400 mb-3">⚙️ Query Builder</h3>
+      
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Selected Entity</label>
+        <div id="selectedEntity" class="px-3 py-2 bg-gray-700 rounded text-sm text-blue-300 min-h-8 flex items-center">
+          <span class="text-gray-400">None selected</span>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-gray-300 mb-1">Company</label>
+        <input id="company" value="pgb" class="w-full px-2 py-2 text-sm bg-gray-700 border border-gray-600 rounded text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+    </div>
+
+    <!-- Filters Panel -->
+    <div class="flex-1 overflow-auto p-4 border-b border-gray-700">
+      <h4 class="text-sm font-bold text-yellow-400 mb-3">🔍 Filters</h4>
+      
+      <div class="space-y-2 mb-4">
+        <label class="block text-xs font-semibold text-gray-300">Add Filter</label>
+        <input id="filterCol" placeholder="Column name" class="w-full px-2 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2">
+        <div class="flex gap-1 mb-2">
+          <select id="filterOp" class="flex-1 px-2 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>eq</option><option>ne</option><option>gt</option><option>ge</option><option>lt</option><option>le</option><option>contains</option><option>startswith</option>
+          </select>
+          <input id="filterVal" placeholder="Value" class="flex-1 px-2 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <button onclick="addFilter()" class="w-full px-3 py-2 text-xs bg-red-600 hover:bg-red-700 text-white rounded font-semibold">+ Add Filter</button>
+      </div>
+
+      <div id="activeFilters" class="space-y-2"></div>
+    </div>
+
+    <!-- Options -->
+    <div class="p-4 border-b border-gray-700">
+      <h4 class="text-sm font-bold text-purple-400 mb-3">📊 Options</h4>
+      <label class="block text-xs font-semibold text-gray-300 mb-1">Columns ($select)</label>
+      <input id="select" placeholder="Col1,Col2,Col3" class="w-full px-2 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3">
+      
+      <label class="block text-xs font-semibold text-gray-300 mb-1">Sort ($orderby)</label>
+      <input id="orderby" placeholder="Col1 asc" class="w-full px-2 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3">
+      
+      <div class="flex gap-2">
+        <div class="flex-1">
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Top</label>
+          <input id="top" type="number" value="100" class="w-full px-2 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div class="flex-1">
+          <label class="block text-xs font-semibold text-gray-300 mb-1">Skip</label>
+          <input id="skip" type="number" class="w-full px-2 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="p-4 flex gap-2">
+      <button onclick="send()" class="flex-1 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded">▶ Execute</button>
+      <button onclick="resetFilters()" class="flex-1 px-3 py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold text-sm rounded">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div class="flex-1 flex flex-col overflow-hidden bg-gray-900">
+    <!-- Tabs -->
+    <div class="flex border-b border-gray-700 bg-gray-800">
+      <button class="tab-btn active px-4 py-2 text-sm font-semibold border-b-2 border-blue-500 text-blue-400" onclick="switchView('tree')">🌳 Tree View</button>
+      <button class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-200" onclick="switchView('table')">📋 Table View</button>
+      <button class="tab-btn px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-400 hover:text-gray-200" onclick="switchView('json')">{ } JSON</button>
+      <div class="ml-auto flex items-center gap-3 pr-4">
+        <input id="search" placeholder="🔎 Filter results..." class="px-3 py-1.5 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="renderView()">
+        <span id="statusBadge" class="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded">Ready</span>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="status" class="px-4 py-2 bg-gray-800 border-b border-gray-700 text-xs text-gray-400 min-h-6"></div>
+
+    <!-- Results Container -->
+    <div class="flex-1 overflow-auto bg-gray-900 p-4">
+      <div id="treeView" class="space-y-1"></div>
+      <div id="tableView" class="hidden overflow-auto"></div>
+      <div id="jsonView" class="hidden"><pre id="jsonRaw" class="bg-gray-800 text-gray-100 p-4 rounded text-xs overflow-auto font-mono"></pre></div>
+    </div>
+
+    <!-- Footer Tools -->
+    <div class="border-t border-gray-700 bg-gray-800 p-4 flex gap-2">
+      <button onclick="copyExcel()" class="flex-1 px-3 py-2 text-xs bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded">📋 Copy Excel</button>
+      <button onclick="csv()" class="flex-1 px-3 py-2 text-xs bg-green-700 hover:bg-green-600 text-white font-semibold rounded">📥 Export CSV</button>
+      <input id="saveName" placeholder="Save as..." class="flex-1 px-3 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button onclick="save()" class="px-3 py-2 text-xs bg-purple-700 hover:bg-purple-600 text-white font-semibold rounded">💾 Save</button>
+      <select id="saved" onchange="loadSaved()" class="flex-1 px-3 py-2 text-xs bg-gray-700 border border-gray-600 rounded text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Load saved query...</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<style>
+  .entity-tree-item {
+    @apply px-2 py-1.5 text-xs cursor-pointer rounded transition-colors flex items-center gap-1;
+  }
+  .entity-tree-item:hover { @apply bg-gray-700; }
+  .entity-tree-item.active { @apply bg-blue-700 text-blue-100 font-semibold; }
+  .entity-tree-item.group { @apply font-bold text-gray-400 cursor-default my-2 px-2 py-1; }
+  .entity-tree-item.group:hover { @apply bg-transparent; }
+  
+  .expand-icon { @apply inline-block w-4 h-4 text-gray-400 text-center select-none; }
+  .tree-row { @apply px-2 py-1.5 border-b border-gray-700 flex items-center gap-2 hover:bg-gray-800 text-sm; }
+  .tree-row.expanded { @apply bg-gray-750; }
+  .tree-indent { @apply inline-block; }
+  
+  table { @apply w-full text-xs; }
+  table th { @apply sticky top-0 px-3 py-2 text-left font-semibold bg-gray-800 border-b border-gray-700 cursor-pointer hover:bg-gray-700; }
+  table td { @apply px-3 py-2 border-b border-gray-700; }
+  table tr:hover { @apply bg-gray-800; }
+
+  .filter-badge { @apply inline-flex items-center gap-1.5 px-2 py-1 bg-red-900 text-red-100 rounded text-xs mb-2; }
+  .filter-badge button { @apply text-red-200 hover:text-red-50 font-bold text-sm; }
+</style>
+
+<script>
+let rows = [], keys = [], sortKey = null, asc = true, filters = [], currentView = 'tree';
+const $ = id => document.getElementById(id);
+
+const entities = {
+  'Procurement': {
+    entities: ['PurchaseOrderHeaders', 'PurchaseOrderLines', 'VendorInvoiceHeaders', 'VendorInvoiceLines', 'Vendors'],
+    icon: '📦'
+  },
+  'Sales': { entities: ['SalesOrderHeaders', 'SalesOrderLines', 'Customers', 'Invoices'], icon: '🛒' },
+  'Inventory': { entities: ['InventoryTransactions', 'Warehouses', 'Products', 'LandedCostPurchaseLines'], icon: '📦' },
+  'Finance': { entities: ['JournalHeaders', 'JournalLines', 'GeneralLedger', 'Accounts'], icon: '💰' },
+  'HR': { entities: ['Employees', 'Payroll', 'TimeEntries'], icon: '👥' }
+};
+
+function initEntityTree() {
+  let html = '';
+  Object.entries(entities).forEach(([group, data]) => {
+    html += `<div class="entity-tree-item group">${data.icon} ${group}</div>`;
+    data.entities.forEach(e => 
+      html += `<div class="entity-tree-item" onclick="selectEntity('${e}')" title="${e}"><span class="expand-icon">└</span>${e}</div>`
+    );
+  });
+  $('entityTree').innerHTML = html;
+}
+
+function selectEntity(entity) {
+  $('url') ? $('url').value = '/data/' + entity : null;
+  $('selectedEntity').textContent = entity;
+  $('selectedEntity').className = 'px-3 py-2 bg-blue-900 rounded text-sm text-blue-100 min-h-8 flex items-center font-semibold';
+  
+  document.querySelectorAll('.entity-tree-item').forEach(el => el.classList.remove('active'));
+  Array.from(document.querySelectorAll('.entity-tree-item')).find(el => el.textContent.includes(entity))?.classList.add('active');
+}
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) }
+function escOData(s) { return String(s).replace(/'/g, "''") }
+
+function addFilter() {
+  let c = $('filterCol').value.trim(), o = $('filterOp').value, v = $('filterVal').value.trim();
+  if (!c || !v) return;
+  filters.push({ col: c, op: o, val: v });
+  $('filterCol').value = '';
+  $('filterVal').value = '';
+  renderFilters();
+}
+
+function removeFilter(i) { filters.splice(i, 1); renderFilters(); }
+
+function renderFilters() {
+  let html = filters.map((f, i) => 
+    `<div class="filter-badge">${esc(f.col)} <strong>${f.op}</strong> "${esc(f.val)}"<button onclick="removeFilter(${i})">✕</button></div>`
+  ).join('');
+  $('activeFilters').innerHTML = html || '<div class="text-gray-500 text-xs">No filters</div>';
+}
+
+function buildODataUrl() {
+  let selected = $('selectedEntity').textContent;
+  if (selected === 'None selected') return '';
+  let base = '/data/' + selected;
+  let parts = [], sel = $('select').value.trim(), ord = $('orderby').value.trim(), t = $('top').value || '', sk = $('skip').value || '';
+  if (sel) parts.push('$select=' + encodeURIComponent(sel));
+  if (filters.length) {
+    let expr = filters.map(f => {
+      if (f.op === 'contains') return `contains(${f.col},'${escOData(f.val)}')`;
+      return `${f.col} ${f.op} '${escOData(f.val)}'`;
+    }).join(' and ');
+    parts.push('$filter=' + encodeURIComponent(expr));
+  }
+  if (ord) parts.push('$orderby=' + encodeURIComponent(ord));
+  if (t) parts.push('$top=' + t);
+  if (sk) parts.push('$skip=' + sk);
+  return base + (parts.length ? '?' + parts.join('&') : '');
+}
+
+function resetFilters() {
+  filters = [];
+  $('select').value = '';
+  $('orderby').value = '';
+  $('top').value = '100';
+  $('skip').value = '';
+  renderFilters();
+}
+
+function renderTreeView() {
+  let q = $('search').value.toLowerCase();
+  let filtered = rows.filter(r => !q || keys.some(k => String(r[k] ?? '').toLowerCase().includes(q)));
+  if (!filtered.length) { $('treeView').innerHTML = '<div class="text-gray-500 text-sm">No records found</div>'; return; }
+  
+  let html = '<div class="space-y-1 text-gray-100">';
+  filtered.forEach((row, idx) => {
+    html += `<div class="tree-row group" onclick="toggleRow(this)">
+      <span class="expand-icon cursor-pointer">▶</span>
+      <span class="font-semibold text-blue-300">${idx + 1}</span>`;
+    keys.slice(0, 3).forEach(k => html += `<span class="text-gray-400">${esc(row[k] ?? '').substring(0, 20)}</span>`);
+    html += `</div><div class="hidden group-details space-y-0.5" style="margin-left:20px">`;
+    keys.forEach(k => html += `<div class="text-xs text-gray-400"><span class="text-gray-500">${esc(k)}:</span> <span class="text-gray-200">${esc(row[k] ?? '')}</span></div>`);
+    html += '</div>';
+  });
+  html += '</div>';
+  $('treeView').innerHTML = html;
+}
+
+function renderTableView() {
+  let q = $('search').value.toLowerCase();
+  let filtered = rows.filter(r => !q || keys.some(k => String(r[k] ?? '').toLowerCase().includes(q)));
+  if (sortKey) filtered.sort((x, y) => String(x[sortKey] ?? '').localeCompare(String(y[sortKey] ?? ''), undefined, { numeric: true }) * (asc ? 1 : -1));
+  if (!filtered.length) { $('tableView').innerHTML = '<div class="text-gray-500 p-4">No records found</div>'; return; }
+  
+  let html = '<table><thead><tr>';
+  keys.forEach(k => html += `<th onclick="sort('${esc(k)}')">${esc(k)} ${sortKey === k ? (asc ? '▲' : '▼') : ''}</th>`);
+  html += '</tr></thead><tbody>';
+  filtered.forEach(r => { html += '<tr>'; keys.forEach(k => html += `<td>${esc(r[k] ?? '')}</td>`); html += '</tr>'; });
+  html += '</tbody></table>';
+  $('tableView').innerHTML = html;
+}
+
+function renderView() {
+  if (currentView === 'tree') renderTreeView();
+  else if (currentView === 'table') renderTableView();
+}
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active', 'border-blue-500', 'text-blue-400'); b.classList.add('border-transparent', 'text-gray-400'); });
+  event.target.classList.add('active', 'border-blue-500', 'text-blue-400');
+  document.querySelectorAll('[id$="View"]').forEach(v => v.classList.add('hidden'));
+  $((view + 'View')).classList.remove('hidden');
+  if (rows.length) renderView();
+}
+
+function sort(k) { if (sortKey === k) asc = !asc; else { sortKey = k; asc = true; } renderTableView(); }
+
+async function send() {
+  let url = buildODataUrl();
+  if (!url) { $('status').textContent = '❌ Please select an entity'; return; }
+  $('status').textContent = '⏳ Loading...';
+  $('statusBadge').textContent = 'Loading...';
+  try {
+    let r = await fetch('/api/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ method: 'GET', url, company: $('company').value.trim() }) });
+    let out = await r.json();
+    $('statusBadge').textContent = out.status + ' ' + (out.statusText || '');
+    if (!r.ok || out.error) { $('status').textContent = '❌ ' + out.error; return; }
+    let data = out.data;
+    $('jsonRaw').textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    let arr = Array.isArray(data) ? data : data?.value || [];
+    keys = [];
+    arr.forEach(r => Object.keys(r || {}).forEach(k => { if (!keys.includes(k)) keys.push(k); }));
+    rows = arr;
+    sortKey = null;
+    renderView();
+    $('status').textContent = `✅ Loaded ${arr.length} records`;
+  } catch (e) { $('status').textContent = '❌ ' + e.message; }
+}
+
+function toggleRow(el) {
+  let details = el.querySelector('.group-details');
+  let icon = el.querySelector('.expand-icon');
+  if (details.classList.contains('hidden')) {
+    details.classList.remove('hidden');
+    icon.textContent = '▼';
+  } else {
+    details.classList.add('hidden');
+    icon.textContent = '▶';
+  }
+}
+
+function copyExcel() { if (!rows.length) return; navigator.clipboard.writeText([keys.join('\t'), ...rows.map(r => keys.map(k => r[k] ?? '').join('\t'))].join('\n')); $('status').textContent = '✅ Copied to clipboard'; }
+function csv() { if (!rows.length) return; let t = [keys, ...rows.map(r => keys.map(k => r[k] ?? ''))].map(a => a.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n'); let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: 'text/csv' })); a.download = 'd365-data.csv'; a.click(); }
+function save() { let n = $('saveName').value.trim(); if (!n) return; let s = JSON.parse(localStorage.getItem('d365Saved') || '{}'); s[n] = { entity: $('selectedEntity').textContent, company: $('company').value, select: $('select').value, orderby: $('orderby').value, top: $('top').value, skip: $('skip').value, filters: JSON.parse(JSON.stringify(filters)) }; localStorage.setItem('d365Saved', JSON.stringify(s)); refreshSaved(); $('saveName').value = ''; }
+function refreshSaved() { let s = JSON.parse(localStorage.getItem('d365Saved') || '{}'); $('saved').innerHTML = '<option value="">Load saved query...</option>' + Object.keys(s).map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join(''); }
+function loadSaved() { let n = $('saved').value; if (!n) return; let x = JSON.parse(localStorage.getItem('d365Saved') || '{}')[n]; selectEntity(x.entity); $('company').value = x.company; $('select').value = x.select || ''; $('orderby').value = x.orderby || ''; $('top').value = x.top || '100'; $('skip').value = x.skip || ''; filters = x.filters || []; renderFilters(); }
+
+async function health() { try { let r = await fetch('/api/health'); let x = await r.json(); $('health').textContent = x.d365Configured ? '✅ Ready' : '⚠️ Configure .env'; } catch (e) { $('health').textContent = '❌ Unavailable'; } }
+
+initEntityTree();
+renderFilters();
+refreshSaved();
+health();
+</script>
+</body>
+</html>
