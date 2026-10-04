@@ -1,0 +1,18 @@
+{
+  "name": "finsight365",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small Postman-style browser UI and Node.js proxy for Dynamics 365 Finance & Operations OData.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0"
+  }
+}
